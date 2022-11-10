@@ -1,9 +1,20 @@
 import React, {useState} from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import {toast} from "react-toastify"
 import {ReactComponent as ArrowRightIcon} from "../assets/svg/keyboardArrowRightIcon.svg"
-import {getAuth, createUserWithEmailAndPassword, updateProfile} from "firebase/auth"
-import { db } from '../_firebase.config'
+import {
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    updateProfile,
+} from "firebase/auth"
+import {
+    setDoc,
+    doc,
+    serverTimestamp,
+} from "firebase/firestore"
+import { db } from '../lib/firebase.config'
 import visibilityIcon from "../assets/svg/visibilityIcon.svg"
+import OAuth from '../components/OAuth'
 
 function SignUp() {
     const [showPassword, setShowPassword] = useState(false)
@@ -43,11 +54,24 @@ function SignUp() {
                 displayName: name
             })
 
+            /*Due to immutability principle of functional programing,
+            Here we make a copy of formData and delete the password(already used in authentication and we
+            don't want it displayed in firestore) 
+            *then we add the timestamp to the data.
+            */
+            const formDataCopy = {
+                ...formData
+            }
+            delete formDataCopy.password
+            formDataCopy.timestamp = serverTimestamp()
+
+            await setDoc(doc(db, "users", user.uid), formDataCopy)
+
             navigate("/")
 
 
         } catch (error) {
-            console.log(error)
+            toast.error("Something went wrong with registration")
         }
     }
 
@@ -80,6 +104,7 @@ function SignUp() {
             </div>
         </form>
         {/* Google OAuth */}
+        <OAuth />
 
         <Link to="/sign-in" className='registerLink'>Sign In Instead</Link>
       </div>
